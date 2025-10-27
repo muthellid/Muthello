@@ -2,10 +2,12 @@ import logging
 import os
 import sys
 import traceback
-sys.path.insert(0, os.path.dirname(__file__))
+
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from ai_modules.ai import get_best_move_from_grid
+
+sys.path.insert(0, os.path.dirname(__file__))
 
 # ------------------------------
 # Cấu hình Flask
@@ -62,6 +64,6 @@ def ai_move():
 # ------------------------------
 if __name__ == "__main__":
     # ❌ Không dùng reconfigure vì không tương thích trong Replit
-    PORT = int(os.environ.get("PORT", 10000))
+    PORT = int(os.environ.get("PORT", 5000))
     print(f"🚀 Flask development server khởi động tại port {PORT} (DEBUG ON)...")
     app.run(host="0.0.0.0", port=PORT, debug=True)
