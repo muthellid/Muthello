@@ -1,17 +1,26 @@
 # ai_modules/eval_fn.py
-# Evaluation combining positional weights, mobility and parity
+# Evaluation combining positional weights, mobility, parity, and stability
 
-from .util import WEIGHTS, opponent
+from .stability import stability_score
+from .util import BOARD_WEIGHTS, opponent
 
-def positional_score(board, color):
+def positional_score(board, color, board_name='board4'):
+    # Lấy trọng số tương ứng board hiện tại
+    weights = BOARD_WEIGHTS.get(
+        board_name,
+        BOARD_WEIGHTS.get(getattr(
+            board, 'board_id',
+            'default'
+        ), BOARD_WEIGHTS['default'])
+    )
     s = 0
     for y in range(8):
         for x in range(8):
             c = board.grid[y][x]
             if c == color:
-                s += WEIGHTS[y][x]
+                s += weights[y][x]
             elif c == opponent(color):
-                s -= WEIGHTS[y][x]
+                s -= weights[y][x]
     return s
 
 def mobility_score(board, color):
@@ -23,32 +32,23 @@ def mobility_score(board, color):
 
 def parity_score(board, color):
     black, white = board.count()
-    if color == 'black':
-        return black - white
-    else:
-        return white - black
+    return black - white if color == 'black' else white - black
 
-def evaluate(board, color):
+def evaluate(board, color, board_name='board4'):
     # composite evaluation, tuned for phases by weighting components
-    phase = None
-    # Light phase inference: count discs
     black, white = board.count()
     total = black + white
-    if total <= 20:
-        phase = 'early'
-    elif total <= 50:
-        phase = 'mid'
-    else:
-        phase = 'end'
+    phase = 'early' if total <= 20 else 'mid' if total <= 50 else 'end'
 
-    pos = positional_score(board, color)
+    pos = positional_score(board, color, board_name)
     mob = mobility_score(board, color)
     par = parity_score(board, color)
+    stab = stability_score(board, color)
 
     if phase == 'early':
-        return pos * 2 + mob * 10 + par * 1
+        return pos * 2 + mob * 10 + par * 1 + stab * 5
     elif phase == 'mid':
-        return pos * 2 + mob * 12 + par * 2
+        return pos * 2 + mob * 12 + par * 2 + stab * 10
     else:
         # endgame: parity (disc count) is dominant
-        return par * 100 + pos * 1 + mob * 5
+        return par * 100 + pos * 1 + mob * 5 + stab * 50

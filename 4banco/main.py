@@ -3,9 +3,8 @@ import os
 import sys
 import traceback
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
-
 from ai_modules.ai import get_best_move_from_grid
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -47,10 +46,22 @@ def ai_move():
             app.logger.error(f"⚠️ {msg}")
             return jsonify({"status": "error", "message": msg}), 400
 
+        # Debug chi tiết grid
+        app.logger.debug(f"[DEBUG] Grid trước khi gửi AI: {grid}")
         app.logger.info(f"🧠 AI đang tính nước đi... màu={ai_color}, depth={depth}")
 
-        move = get_best_move_from_grid(grid, ai_color, requested_depth=depth, time_limit=10)
-        app.logger.info(f"✅ AI trả về move: {move}")
+        # Gọi hàm AI
+        move = get_best_move_from_grid(
+            grid, 
+            ai_color, 
+            requested_depth=depth,
+            time_limit=10
+        )
+
+        if move is None:
+            app.logger.warning("⚠️ AI trả về None, không tìm được nước đi hợp lệ.")
+        else:
+            app.logger.info(f"✅ AI trả về move: {move}")
 
         return jsonify({"status": "ok", "move": move})
 
@@ -63,7 +74,6 @@ def ai_move():
 # Entry point local (dev only)
 # ------------------------------
 if __name__ == "__main__":
-    # ❌ Không dùng reconfigure vì không tương thích trong Replit
     PORT = int(os.environ.get("PORT", 5000))
     print(f"🚀 Flask development server khởi động tại port {PORT} (DEBUG ON)...")
     app.run(host="0.0.0.0", port=PORT, debug=True)
